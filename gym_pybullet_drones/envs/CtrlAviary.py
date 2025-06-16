@@ -22,7 +22,17 @@ class CtrlAviary(BaseAviary):
                  record=False,
                  obstacles=False,
                  user_debug_gui=True,
-                 output_folder='results'
+                 output_folder='results',
+                 ##风扰参数
+                 enable_wind=False,
+                 wind_reference_velocity=5.0,
+                 wind_turbulence_intensity=0.8,
+                 wind_length_scale=200.0,
+                 wind_gust_amplitude=2.0,
+                 wind_gust_period=15.0,
+                 wind_drag_coefficient=0.5,
+                 wind_reference_area=0.01,
+                 wind_seed=None
                  ):
         """Initialization of an aviary environment for control applications.
 
@@ -52,6 +62,24 @@ class CtrlAviary(BaseAviary):
             Whether to add obstacles to the simulation.
         user_debug_gui : bool, optional
             Whether to draw the drones' axes and the GUI RPMs sliders.
+        enable_wind : bool, optional
+            Whether to enable wind disturbance.
+        wind_reference_velocity : float, optional
+            Reference velocity for Dryden filter (m/s).
+        wind_turbulence_intensity : float, optional
+            Turbulence intensity (m/s).
+        wind_length_scale : float, optional
+            Turbulence length scale (m).
+        wind_gust_amplitude : float, optional
+            Gust amplitude (m/s).
+        wind_gust_period : float, optional
+            Gust period (s).
+        wind_drag_coefficient : float, optional
+            Drag coefficient.
+        wind_reference_area : float, optional
+            Reference area for force calculation (m²).
+        wind_seed : int, optional
+            Random seed for wind generation.
 
         """
         super().__init__(drone_model=drone_model,
@@ -66,7 +94,17 @@ class CtrlAviary(BaseAviary):
                          record=record,
                          obstacles=obstacles,
                          user_debug_gui=user_debug_gui,
-                         output_folder=output_folder
+                         output_folder=output_folder,
+                         ##给父类传递风扰
+                         enable_wind=enable_wind,
+                         wind_reference_velocity=wind_reference_velocity,
+                         wind_turbulence_intensity=wind_turbulence_intensity,
+                         wind_length_scale=wind_length_scale,
+                         wind_gust_amplitude=wind_gust_amplitude,
+                         wind_gust_period=wind_gust_period,
+                         wind_drag_coefficient=wind_drag_coefficient,
+                         wind_reference_area=wind_reference_area,
+                         wind_seed=wind_seed
                          )
 
     ################################################################################
