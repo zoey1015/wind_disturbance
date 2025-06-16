@@ -1,0 +1,115 @@
+import numpy as np
+import math
+
+
+class MarineDrydenTurbulence:
+    def __init__(self, V=5.0, dt=1 / 240.0,
+                 sigma_u=0.8, L_u=200.0,
+                 gust_amplitude=2.0, gust_period=15.0,
+                 Cd=0.5, A=0.01,
+                 drone_mass=0.027,
+                 seed=None):
+        """
+        Marine Dryden湍流 + 阵风模型（支持三轴、力和力矩计算）
+
+        Parameters:
+        - V: 无人机参考速度，用于Dryden滤波器 (m/s)
+        - dt: 时间步长 (s)
+        - sigma_u: 湍流强度 (m/s)
+        - L_u: 湍流长度尺度 (m)
+        - gust_amplitude: 阵风幅值 (m/s)
+        - gust_period: 阵风周期 (s)
+        - Cd: 阻力系数（默认简化为 0.5）
+        - A: 参考受力面积 (m²)
+        - drone_mass: 无人机质量 (kg)
+        - seed: 随机种子（可复现实验）
+        """
+        self.dt = dt
+        self.V = V
+        self.L_u = L_u
+        self.sigma_u = sigma_u
+        self._update_dryden_coeff()
+
+        self.x_u = np.zeros(3)
+
+        self.gust_amp = gust_amplitude
+        self.gust_omega = 2 * math.pi / gust_period
+        self.t = 0.0
+
+        self.rho = 1.225  # 空气密度
+        self.Cd = Cd
+        self.A = A
+        self.drone_mass = drone_mass
+
+        self.rng = np.random.default_rng(seed)
+
+    def _update_dryden_coeff(self):
+        """更新 α 和 β 系数"""
+        self.alpha = math.exp(-self.dt * self.V / self.L_u)
+        self.beta = self.sigma_u * math.sqrt(1 - self.alpha ** 2)
+
+    def step(self, position=None, velocity=None, angular_velocity=None):
+        """返回风扰产生的力（N）和力矩（N·m）"""
+        # 湍流（Dryden）
+        w = self.rng.standard_normal(3)
+        dryden_noise = self.alpha * self.x_u + self.beta * w
+        self.x_u = dryden_noise
+
+        # 阵风（相位差方式建模）
+        gust = np.array([
+            self.gust_amp * math.sin(self.gust_omega * self.t),
+            self.gust_amp * 0.5 * math.sin(self.gust_omega * self.t + math.pi / 4),
+            self.gust_amp * 0.3 * math.sin(self.gust_omega * self.t + math.pi / 2)
+        ])
+
+        # 总风速
+        wind_velocity = dryden_noise + gust
+
+        # 相对风速（风速 - 无人机自身速度）
+        relative_wind = wind_velocity - velocity if velocity is not None else wind_velocity
+
+        # 计算风扰力（空气阻力，方向取反）
+        Vmag = np.linalg.norm(relative_wind)
+        if Vmag > 0:
+            forces = -0.5 * self.rho * Vmag * relative_wind * self.Cd * self.A
+        else:
+            forces = np.zeros(3)
+
+        # 简化风扰力矩
+        if angular_velocity is not None:
+            torque_coefficient = 0.001
+            torques = torque_coefficient * np.cross(relative_wind, angular_velocity)
+        else:
+            torque_arm = 0.05
+            torques = np.array([
+                torque_arm * forces[1],       # 绕 x 轴
+                -torque_arm * forces[0],      # 绕 y 轴
+                0.1 * (wind_velocity[0] - wind_velocity[1])  # 绕 z 轴
+            ])
+
+        self.t += self.dt
+        return forces, torques
+
+    def reset(self):
+        """重置内部状态"""
+        self.x_u = np.zeros(3)
+        self.t = 0.0
+
+    def set_wind_parameters(self, **kwargs):
+        """动态修改参数并自动更新滤波器"""
+        if 'V' in kwargs:
+            self.V = kwargs['V']
+        if 'L_u' in kwargs:
+            self.L_u = kwargs['L_u']
+        if 'sigma_u' in kwargs:
+            self.sigma_u = kwargs['sigma_u']
+        if any(k in kwargs for k in ['V', 'L_u', 'sigma_u']):
+            self._update_dryden_coeff()
+        if 'gust_amplitude' in kwargs:
+            self.gust_amp = kwargs['gust_amplitude']
+        if 'gust_period' in kwargs:
+            self.gust_omega = 2 * math.pi / kwargs['gust_period']
+        if 'Cd' in kwargs:
+            self.Cd = kwargs['Cd']
+        if 'A' in kwargs:
+            self.A = kwargs['A']
