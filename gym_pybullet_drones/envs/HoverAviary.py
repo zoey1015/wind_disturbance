@@ -18,7 +18,17 @@ class HoverAviary(BaseRLAviary):
                  gui=False,
                  record=False,
                  obs: ObservationType=ObservationType.KIN,
-                 act: ActionType=ActionType.RPM
+                 act: ActionType=ActionType.RPM，
+                 ##新增风扰参数
+                 enable_wind=False,
+                 wind_reference_velocity=5.0,
+                 wind_turbulence_intensity=0.8,
+                 wind_length_scale=200.0,
+                 wind_gust_amplitude=2.0,
+                 wind_gust_period=15.0,
+                 wind_drag_coefficient=0.5,
+                 wind_reference_area=0.01,
+                 wind_seed=None
                  ):
         """Initialization of a single agent RL environment.
 
@@ -60,7 +70,17 @@ class HoverAviary(BaseRLAviary):
                          gui=gui,
                          record=record,
                          obs=obs,
-                         act=act
+                         act=act，
+                          # 传递风扰参数给父类BaseAviary
+                         enable_wind=enable_wind,
+                         wind_reference_velocity=wind_reference_velocity,
+                         wind_turbulence_intensity=wind_turbulence_intensity,
+                         wind_length_scale=wind_length_scale,
+                         wind_gust_amplitude=wind_gust_amplitude,
+                         wind_gust_period=wind_gust_period,
+                         wind_drag_coefficient=wind_drag_coefficient,
+                         wind_reference_area=wind_reference_area,
+                         wind_seed=wind_seed
                          )
 
     ################################################################################
