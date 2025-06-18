@@ -31,7 +31,7 @@ from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.MultiHoverAviary import MultiHoverAviary
 from gym_pybullet_drones.utils.utils import sync, str2bool
-from gym_pybullet_drones.utils.enums import ObservationType, ActionType
+from gym_pybullet_drones.utils.enums import ObservationType, ActionType,Physics
 
 DEFAULT_GUI = True
 DEFAULT_RECORD_VIDEO = False
@@ -51,11 +51,26 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
 
     if not multiagent:
         train_env = make_vec_env(HoverAviary,
-                                 env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
+                                 env_kwargs=dict(obs=DEFAULT_OBS, 
+                                                 act=DEFAULT_ACT,
+                                                 physics=Physics.PYB_WIND,
+                                                 enable_wind=True,
+                                                 wind_gust_amplitude=3.0,
+                                                 wind_turbulence_intensity=1.2, 
+                                                 wind_gust_period=10.0
+                                                 ),
                                  n_envs=1,
                                  seed=0
                                  )
-        eval_env = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        eval_env = Monitor(HoverAviary(obs=DEFAULT_OBS,
+                               act=DEFAULT_ACT,
+                               physics=Physics.PYB_WIND,
+                               enable_wind=True,
+                               wind_gust_amplitude=3.0,
+                               wind_turbulence_intensity=1.2, 
+                               wind_gust_period=10.0
+                                )
+        )
     else:
         train_env = make_vec_env(MultiHoverAviary,
                                  env_kwargs=dict(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT),
